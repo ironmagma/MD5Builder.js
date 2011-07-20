@@ -4,21 +4,21 @@ import sys
 files = [
    "md5.air.FileStream.js",
    "md5.js",
-   "MD5Stream.js"
+   "MD5Builder.js"
 ]
 
 inp = "\n".join([open(x, "r").read() for x in files])
 
-thetest = [97]*5000
-
 inp += """
 
 var x = new MD5Builder();
-var m = [%s];
-print(x.update(m));
+x.update([%s]);
+print(x.calc());
 
-""" % (", ".join([str(x) for x in thetest]))
+""" % ("".join(['97, ']*8192)[:-2])
 
 subprocess.Popen(['/usr/local/bin/js', '-e', inp]).wait()
 
-subprocess.Popen(['md5', '-s', "".join([chr(x) for x in thetest])]).wait()
+x = subprocess.Popen(['md5', '-s', "a"*8192], stdout = subprocess.PIPE)
+x.wait()
+print x.stdout.read().split("= ")[1]

@@ -1,6 +1,4 @@
 /*
-    (Modified by)
-       Philip Peterson
 
     (Based on)
        md5.air.FileStream.js
