@@ -128,7 +128,7 @@ function core_md5_ex(x, len, abcd_start, append_padding, total_len)
     d = safe_add(d, oldd);
   }
   
-  return Array(a, b, c, d);
+  return [a, b, c, d];
 }
 
 

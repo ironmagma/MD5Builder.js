@@ -3,7 +3,6 @@ var MD5Builder = (function() {
 function assert(x, msg) { if(!x) throw new Error("Assert error" + ((msg !== undefined)?(": "+msg):"")); }
 
 var BUFFER_SIZE = 8192;
-BUFFER_SIZE = 5;
 
 function MemBuffer() {
    if(!(this instanceof MemBuffer)) throw new ValueError("MemBuffer constructor mustn't be called as function.");
@@ -33,7 +32,7 @@ MemBuffer.prototype.append = function(v, offset) {
    offset = offset || 0;
    assert(v.length-offset <= BUFFER_SIZE, "Adding beyond");
 
-   if (v instanceof KittyArray) {
+   if (v.getElem) {
       function getElem(x) {return v.getElem(x);}
    }
    else {
@@ -77,13 +76,12 @@ function MD5Builder() {
    this.bigBuf = new MemBuffer();
 };
 
-MD5Builder.prototype._getbuf = function() {
-   return this.bigBuf;
-};
-
 MD5Builder.prototype.update = function(bytearr) {
    if (typeof bytearr === "number") {
-      return this.update([bytearr]);
+      bytearr = [bytearr];
+   }
+   if (typeof ArrayBuffer !== "undefined" && bytearr instanceof ArrayBuffer) {
+      bytearr = new Uint8Array(bytearr);
    }
 
    var catted = new KittyArray(this.bigBuf, bytearr);
@@ -101,8 +99,52 @@ MD5Builder.prototype.update = function(bytearr) {
    }
 }
 
-MD5Builder.prototype._process = function(byteArr, offset, numBytes) {
+MD5Builder.prototype._process = function(byteArr, offset, numBytes, isThisTheFinalCalc) {
+
+   if (numBytes === BUFFER_SIZE && !isThisTheFinalCalc) {
+      var appendPadding = false;
+   }
+   else {
+      var appendPadding = true;
+   }
+
+   if (byteArr.getElem) {
+      function getElem(x) {return byteArr.getElem(x);}
+   }
+   else {
+      function getElem(x) {return byteArr[x];}
+   }
+
+
+   var bin = [];
+
+   for(var j = 0; j < numBytes * 8; j+=8) {
+      bin[j>>5] |= (getElem(offset+(j>>3)) & 0xff) << (j%32);
+   }
+
+
+
+   if (!appendPadding) {
+      assert(numBytes === BUFFER_SIZE, "Numbytes != BUFFER_SIZE and no padding");
+      this.totalLen += numBytes;
+      return this.abcd_start = core_md5_ex(bin, numBytes*8, this.abcd_start, appendPadding, this.totalLen);
+   }
+   else {
+      var totalLen = this.totalLen + numBytes;
+      return core_md5_ex(bin, numBytes*8, this.abcd_start, appendPadding, totalLen);
+   }
+
 }
+
+
+MD5Builder.prototype.compute = function() {
+   if (this.bigBuf.size > 0) {
+      return binl2hex(this._process(this.bigBuf, 0, this.bigBuf.size, true));
+   }
+   else {
+      return binl2hex(this._process([], 0, 0, true));
+   }
+};
 
 
 function KittyArray(buf, arr) { // simulates the buffer catted to the array
