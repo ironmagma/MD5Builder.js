@@ -9,16 +9,40 @@ files = [
 
 inp = "\n".join([open(x, "r").read() for x in files])
 
+#num = int(sys.argv[1])
+#
+#thetest = [97]*num
+#
+#inp += """
+#
+#//var x = new MD5Builder();
+#//x.update([
+#//%s
+#//]);
+#//print(x.calc());
+#
+#""" % ", ".join([str(x) for x in thetest])
+
 inp += """
 
 var x = new MD5Builder();
-x.update([%s]);
-print(x.calc());
+x.update(1);
+print(x._getbuf());
+x.update(2);
+print(x._getbuf());
+x.update(3);
+print(x._getbuf());
+x.update(4);
+print(x._getbuf());
+x.update(5);
+print(x._getbuf());
+x.update(6);
+print(x._getbuf());
 
-""" % ("".join(['97, ']*8192)[:-2])
+"""
 
 subprocess.Popen(['/usr/local/bin/js', '-e', inp]).wait()
 
-x = subprocess.Popen(['md5', '-s', "a"*8192], stdout = subprocess.PIPE)
-x.wait()
-print x.stdout.read().split("= ")[1]
+#x = subprocess.Popen(['md5', '-s', "".join([chr(x) for x in thetest])], stdout = subprocess.PIPE)
+#x.wait()
+#print x.stdout.read().split("= ")[1]

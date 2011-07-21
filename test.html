@@ -1,0 +1,16 @@
+<script type="text/javascript" src="MD5Builder.js"></script>
+<script type="text/javascript" src="md5.air.FileStream.js"></script>
+<script type="text/javascript" src="md5.js"></script>
+
+<script type="text/javascript">
+   var myArr = [];
+   for(var i=0;i<8192;i++) {
+      myArr.push(97);
+   }
+
+var x = new MD5Builder();
+x.update(
+      myArr
+);
+console.log(x.calc());
+</script>

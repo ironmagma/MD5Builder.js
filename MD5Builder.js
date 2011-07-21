@@ -1,162 +1,153 @@
-function MD5Builder() {
-   if(!(this instanceof MD5Builder)) throw new ValueError("MD5Builder constructor mustn't be called as function.");
-   this.littleBuffer = []; // TODO make littleBuffer a real buffer
-   this._totalLen = 0;
+var MD5Builder = (function() {
 
- 	this.abcd_start = [ 1732584193, -271733879, -1732584194, 271733878 ];
+function assert(x, msg) { if(!x) throw new Error("Assert error" + ((msg !== undefined)?(": "+msg):"")); }
+
+var BUFFER_SIZE = 8192;
+BUFFER_SIZE = 5;
+
+function MemBuffer() {
+   if(!(this instanceof MemBuffer)) throw new ValueError("MemBuffer constructor mustn't be called as function.");
+   if (typeof Uint8Array !== "undefined")  {
+      this.buf = new Uint8Array(BUFFER_SIZE);
+   }
+   else {
+      this.buf = new Array();
+   }
+   this.size = 0;
 }
 
-(function() {
+MemBuffer.prototype.empty = function() {
+   this.size = 0;
+};
 
-   var BUFFER_SIZE = 8192;
+MemBuffer.prototype.getElem = function(i) {
+   return this.buf[i];
+};
 
-   function KittyArray(buf, arr) { // simulates the buffer catted to the array
-   
-      if(!(this instanceof KittyArray)) throw new ValueError("KittyArray constructor mustn't be called as function.");
+MemBuffer.prototype.setElem = function(i, v) {
+   assert(i < this.buf.size, "Buffer index out of bounds.");
+   this.buf[i] = v;
+};
 
-      if(typeof ArrayBuffer !== 'undefined' && arr.constructor === ArrayBuffer) {
-         arr = new Uint8Array(arr);
-      }
+MemBuffer.prototype.append = function(v, offset) {
+   offset = offset || 0;
+   assert(v.length-offset <= BUFFER_SIZE, "Adding beyond");
 
-      this.buf = buf;
-      this.arr = arr; 
-      
-
-      // cached lengths
-      this.bufLen = buf.length;
-      this.arrLen = arr.length; 
-      this.length = this.bufLen+this.arrLen;
+   if (v instanceof KittyArray) {
+      function getElem(x) {return v.getElem(x);}
+   }
+   else {
+      function getElem(x) {return v[x];}
    }
 
-   KittyArray.prototype.getElem = function (i) {
-      if (i < this.bufLen) return this.buf[i];
-      return this.arr[i-this.bufLen];
-   };
+   for (var i = 0; i < v.length - offset; i++) {
+      this.buf[this.size + i] = getElem(offset+i);
+      this.size++;
+   }
+};
 
-   MD5Builder.prototype.update = function(bytes) {
+MemBuffer.prototype.setBufferValue = function(arr, offset) {
+   this.empty();
+   this.append(arr, offset);
+};
 
-      // Concatenate the littleBuffer and the update(...) data.
-      var cat = new KittyArray(this.littleBuffer, bytes);
+MemBuffer.prototype.toString = function() {
+   var ret = "[";
+   for (var i = 0; i < this.size; i++) {
+      ret += this.buf[i] + ", ";
+   }
+   if ( ret !== "[" ) {
+      ret = ret.substring(0, ret.length-2);
+   }
+   ret += "]";
+   return ret;
+};
 
-      var numbytes = 0;
+function MD5Builder() {
+   this.abcd_start = [
+      1732584193,
+      -271733879,
+      -1732584194,
+      271733878
+   ];
+   this.totalLen = 0;
+   this.bigBuf = new MemBuffer();
+};
 
-      for (var i = 0; i < cat.length; i += BUFFER_SIZE) {
+MD5Builder.prototype._getbuf = function() {
+   return this.bigBuf;
+};
 
-         if (i+BUFFER_SIZE <= cat.length) {
-            this._process(cat, i, BUFFER_SIZE, false);
-            continue;
-         }
-
-         numbytes = cat.length % BUFFER_SIZE;
-
-      }
-
-
-      // TODO make it not delete the whole buffer every time
-      this.littleBuffer = []; // TODO make littleBuffer a real buffer
-
-      var offset = i - BUFFER_SIZE;
-
-      for (var j = 0; j < numbytes; j++) {
-         this.littleBuffer.push(cat.getElem(offset+j));
-      }
-
+MD5Builder.prototype.update = function(bytearr) {
+   if (typeof bytearr === "number") {
+      return this.update([bytearr]);
    }
 
-   MD5Builder.prototype.calc = function() {
-      if (this.littleBuffer.length > 0) {
-         return this._process(this.littleBuffer, 0, this.littleBuffer.length, true);
-      }
-      return binl2hex(this.abcd_start);
+   var catted = new KittyArray(this.bigBuf, bytearr);
+   var chunksProcessed = 0;
+   while (catted.length-chunksProcessed*BUFFER_SIZE > BUFFER_SIZE) {
+      this._process(catted, chunksProcessed*BUFFER_SIZE, BUFFER_SIZE)
+      chunksProcessed++;
+   }
+   if (chunksProcessed > 0) {
+      var bytesToStore = catted.length-chunksProcessed*BUFFER_SIZE;
+      this.bigBuf.setBufferValue(catted, chunksProcessed*BUFFER_SIZE);
+   }
+   else {
+      this.bigBuf.append(bytearr);
+   }
+}
+
+MD5Builder.prototype._process = function(byteArr, offset, numBytes) {
+}
+
+
+function KittyArray(buf, arr) { // simulates the buffer catted to the array
+
+   if(!(this instanceof KittyArray)) throw new ValueError("KittyArray constructor mustn't be called as function.");
+
+   if(typeof ArrayBuffer !== 'undefined' && arr.constructor === ArrayBuffer) {
+      arr = new Uint8Array(arr);
    }
 
-   MD5Builder.prototype._process = function (bytes, offset, numbytes, pad) {
+   this.buf = buf;
+   this.arr = arr; 
 
-      if(bytes.getElem) {
-         var getElem = function(x) {return bytes.getElem(x);};
-      }
-      else {
-         var getElem = function(x) { return bytes[x]; }
-      }
+   // cached lengths
+   this.bufLen = buf.size;
+   this.arrLen = arr.length; 
+   this.length = this.bufLen+this.arrLen;
+}
 
-      var bin = new Array();
+KittyArray.prototype.getElem = function (i) {
+   if (i < this.bufLen) return this.buf.getElem(i);
+   return this.arr[i-this.bufLen];
+};
 
-  		for(var j = 0; j < numbytes * 8; j+=8) {
-  			bin[j>>5] |= (getElem(offset+(j>>3)) & 0xff) << (j%32);
-      }
 
-      if (!pad) {
-         this._totalLen += numbytes;
-         this.abcd_start = core_md5_ex(bin, numbytes*8, this.abcd_start, false, this._totalLen);
-      }
-      else {
-         var totalLen = this._totalLen + numbytes;
-         return core_md5_ex(bin, numbytes*8, this.abcd_start, true, totalLen);
-      }
+var appendPaddingToBlock = true;
+var totalLen = 0;
 
-   }
+   this.abcd_start = [
+      1732584193,
+      -271733879,
+      -1732584194,
+      271733878
+   ];
+
+var inBytes = [];
+for(var q = 0; q < 8192; q++) {
+   inBytes.push(97);
+}
+
+totalLen += inBytes.length;
+
+bin = new Array();
+for(var i = 0; i < inBytes.length * 8; i+=8)
+  bin[i>>5] |= (inBytes[i>>3] & 0xff) << (i%32);
+
+abcd_start = core_md5_ex(bin, inBytes.length*8, abcd_start, appendPaddingToBlock, totalLen);
+
+return MD5Builder;
 
 }());
-
-// MD5Builder.prototype.update = function(bytes) {
-// 	var abcd_start = new Array();
-// 	abcd_start.push(1732584193);
-// 	abcd_start.push(-271733879);
-// 	abcd_start.push(-1732584194);
-// 	abcd_start.push(271733878);
-// 
-//    var buf = 8192;
-//    var appendPaddingToBlock = false;
-// 	var totalLen = 0;
-// 
-//    for (var i = 0; i < bytes.length; i += buf) {
-// 
-//       if (i+buf <= bytes.length) {
-//          numbytes = buf;
-//       }
-//       else {
-//          appendPaddingToBlock = true;
-//          //numbytes = bytes.length-i-buf;
-//          numbytes = bytes.length % buf;
-//       }
-//       print("#: "+numbytes)
-// 
-//       totalLen += numbytes;
-// 
-//  		var bin = new Array();
-//  		for(var j = 0; j < numbytes * 8; j+=8) {
-//  			bin[j>>5] |= (bytes[i+(j>>3)] & 0xff) << (j%32);
-//       }
-//  		 
-//  		abcd_start = core_md5_ex(bin, numbytes*8, abcd_start, appendPaddingToBlock, totalLen);
-// 
-//    }
-// 
-//  	return binl2hex(abcd_start);	
-// 
-// }
-
-
-// function hex_md5_stream(inStream)
-// {
-// 	while (inStream.bytesAvailable > 0)
-// 	{
-// 		inStream.readBytes(inBytes, 0, Math.min(8192, inStream.bytesAvailable));		
-// 		if(inBytes.length < 8192)
-// 		{
-// 			appendPaddingToBlock = true;
-// 		}
-// 		 
-// 		totalLen += inBytes.length;
-// 		 
-// 		var bin = new Array();
-// 		for(var i = 0; i < inBytes.length * 8; i+=8)
-// 			bin[i>>5] |= (inBytes[i>>3] & 0xff) << (i%32);
-// 		 
-// 		abcd_start = core_md5_ex(bin, inBytes.length*8, abcd_start, appendPaddingToBlock, totalLen);
-// 		inBytes.clear();
-// 	}
-// 	 
-// }
-//
-
