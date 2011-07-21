@@ -115,18 +115,20 @@ MD5Builder.prototype.update = function(bytearr) {
 
 MD5Builder.prototype._process = function(byteArr, offset, numBytes, isThisTheFinalCalc) {
 
+   var getElem, appendPadding;
+      
    if (numBytes === BUFFER_SIZE && !isThisTheFinalCalc) {
-      var appendPadding = false;
+      appendPadding = false;
    }
    else {
-      var appendPadding = true;
+      appendPadding = true;
    }
 
    if (byteArr.getElem) {
-      function getElem(x) {return byteArr.getElem(x);}
+      getElem = function(x) {return byteArr.getElem(x);}
    }
    else {
-      function getElem(x) {return byteArr[x];}
+      getElem = function(x) {return byteArr[x];}
    }
 
 
