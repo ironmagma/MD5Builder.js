@@ -74,20 +74,34 @@ function MD5Builder() {
    ];
    this.totalLen = 0;
    this.bigBuf = new MemBuffer();
-};
+}
 
 MD5Builder.prototype.update = function(bytearr) {
    if (typeof bytearr === "number") {
       bytearr = [bytearr];
    }
-   if (typeof ArrayBuffer !== "undefined" && bytearr instanceof ArrayBuffer) {
+   else if (typeof ArrayBuffer !== "undefined" && bytearr instanceof ArrayBuffer) {
       bytearr = new Uint8Array(bytearr);
    }
+   else if (typeof bytearr === "string") {
+      // Turn a string into a list of characters
+      if (typeof Uint8Array !== "undefined") {
+         var myarr = new Uint8Array(bytearr.length);
+      }
+      else {
+         var myarr = [];
+      }
+      for (var i = 0;i < bytearr.length;i++) {
+         myarr[i]=bytearr.charCodeAt(i);
+      }
+      bytearr = myarr;
+   }
+
 
    var catted = new KittyArray(this.bigBuf, bytearr);
    var chunksProcessed = 0;
    while (catted.length-chunksProcessed*BUFFER_SIZE > BUFFER_SIZE) {
-      this._process(catted, chunksProcessed*BUFFER_SIZE, BUFFER_SIZE)
+      this._process(catted, chunksProcessed*BUFFER_SIZE, BUFFER_SIZE);
       chunksProcessed++;
    }
    if (chunksProcessed > 0) {
@@ -134,10 +148,10 @@ MD5Builder.prototype._process = function(byteArr, offset, numBytes, isThisTheFin
       return core_md5_ex(bin, numBytes*8, this.abcd_start, appendPadding, totalLen);
    }
 
-}
+};
 
 
-MD5Builder.prototype.compute = function() {
+MD5Builder.prototype.calc = function() {
    if (this.bigBuf.size > 0) {
       return binl2hex(this._process(this.bigBuf, 0, this.bigBuf.size, true));
    }

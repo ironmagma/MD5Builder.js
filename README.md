@@ -7,5 +7,5 @@ b.update("H");
 b.update("el");
 b.update("lo");
 b.update("world");
-console.log(b.compute());
+console.log(b.calc());
 ```
