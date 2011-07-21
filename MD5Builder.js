@@ -40,10 +40,13 @@ MemBuffer.prototype.append = function(v, offset) {
       function getElem(x) {return v[x];}
    }
 
+   var initialSize = this.size;
+
    for (var i = 0; i < v.length - offset; i++) {
-      this.buf[this.size + i] = getElem(offset+i);
+      this.buf[initialSize + i] = getElem(offset+i);
       this.size++;
    }
+
 };
 
 MemBuffer.prototype.setBufferValue = function(arr, offset) {

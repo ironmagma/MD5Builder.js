@@ -26,17 +26,8 @@ inp = "\n".join([open(x, "r").read() for x in files])
 inp += """
 
 var x = new MD5Builder();
-x.update(1);
-print(x._getbuf());
-x.update(2);
-print(x._getbuf());
-x.update(3);
-print(x._getbuf());
-x.update(4);
-print(x._getbuf());
-x.update(5);
-print(x._getbuf());
-x.update(6);
+x.update([1,2,3,4,5,6,7,8,9,10]);
+x.update(11);
 print(x._getbuf());
 
 """
