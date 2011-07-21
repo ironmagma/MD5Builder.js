@@ -170,29 +170,6 @@ KittyArray.prototype.getElem = function (i) {
 };
 
 
-var appendPaddingToBlock = true;
-var totalLen = 0;
-
-   this.abcd_start = [
-      1732584193,
-      -271733879,
-      -1732584194,
-      271733878
-   ];
-
-var inBytes = [];
-for(var q = 0; q < 8192; q++) {
-   inBytes.push(97);
-}
-
-totalLen += inBytes.length;
-
-bin = new Array();
-for(var i = 0; i < inBytes.length * 8; i+=8)
-  bin[i>>5] |= (inBytes[i>>3] & 0xff) << (i%32);
-
-abcd_start = core_md5_ex(bin, inBytes.length*8, abcd_start, appendPaddingToBlock, totalLen);
-
 return MD5Builder;
 
 }());
