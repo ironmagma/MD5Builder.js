@@ -133,13 +133,11 @@ MD5Builder.prototype._process = function(byteArr, offset, numBytes, isThisTheFin
       getElem = function(x) {return byteArr[x];}
    }
 
-   console.log()
 
 
    var bin = [];
 
    for(var j = 0; j < numBytes * 8; j+=8) {
-      document.write("Byte "+(offset+(j>>3))+": "+getElem(offset+(j>>3))+"<br>");
       bin[j>>5] |= (getElem(offset+(j>>3)) & 0xff) << (j%32);
    }
 
